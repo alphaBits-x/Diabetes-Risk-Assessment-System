@@ -1,0 +1,95 @@
+import skfuzzy as fuzz
+import numpy as np
+import matplotlib.pyplot as plt
+from skfuzzy import control as ctrl
+
+blood_sugar_range = np.arange(0, 301, 1)
+bmi_range = np.arange(10, 41, 1)
+diabetes_risk_range = np.arange(0, 11, 1)
+
+low_sugar = fuzz.trimf(blood_sugar_range, [0, 0, 100])
+normal_sugar = fuzz.trimf(blood_sugar_range, [70, 100, 130])
+high_sugar = fuzz.trimf(blood_sugar_range, [120, 180, 300])
+
+underweight_bmi = fuzz.trimf(bmi_range, [10, 10, 18.5])
+normal_bmi = fuzz.trimf(bmi_range, [18.5, 22.5, 25])
+overweight_bmi = fuzz.trimf(bmi_range, [23, 28, 40])
+
+low_risk = fuzz.trimf(diabetes_risk_range, [0, 0, 3])
+medium_risk = fuzz.trimf(diabetes_risk_range, [2, 5, 8])
+high_risk = fuzz.trimf(diabetes_risk_range, [6, 10, 10])
+
+plt.figure(figsize=(12, 8))
+
+plt.subplot(2,2,1)
+plt.plot(blood_sugar_range, low_sugar, label='Low Sugar')
+plt.plot(blood_sugar_range, normal_sugar, label='Normal Sugar')
+plt.plot(blood_sugar_range, high_sugar, label='High Sugar')
+plt.title("Blood Sugar Levels")
+plt.xlabel("Blood Sugar (mg/dL)")
+plt.ylabel("Membership Function")
+plt.legend()
+
+plt.subplot(2,2,2)
+plt.plot(bmi_range, underweight_bmi, label='Underweight')
+plt.plot(bmi_range, normal_bmi, label='Normal BMI')
+plt.plot(bmi_range, overweight_bmi, label='Overweight')
+plt.title("BODY MASS INDEX")
+plt.xlabel("BMI")
+plt.ylabel("Membership Function")
+plt.legend()
+
+plt.subplot(2,2,3)
+plt.plot(diabetes_risk_range, low_risk, label='Low Risk')
+plt.plot(diabetes_risk_range, medium_risk, label='Medium Risk')
+plt.plot(diabetes_risk_range, high_risk, label='High Risk')
+plt.title("DIABETES RISK")
+plt.xlabel("Diabetes Risk")
+plt.ylabel("Membership Function")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+blood_sugar = ctrl.Antecedent(blood_sugar_range, 'blood_sugar')
+bmi = ctrl.Antecedent(bmi_range, 'bmi')
+diabetes_risk = ctrl.Consequent(diabetes_risk_range, 'diabetes_risk')
+
+blood_sugar["low"] = low_sugar
+blood_sugar["normal"] = normal_sugar
+blood_sugar["high"] = high_sugar
+
+bmi["underweight"] = underweight_bmi
+bmi["normal"] = normal_bmi
+bmi["overweight"] = overweight_bmi
+
+diabetes_risk["low"] = low_risk
+diabetes_risk["medium"] = medium_risk
+diabetes_risk["high"] = high_risk
+
+Rule1 = ctrl.Rule(blood_sugar["low"] & bmi["underweight"], diabetes_risk["low"])
+Rule2 = ctrl.Rule(blood_sugar["low"] & bmi["normal"], diabetes_risk["low"])
+Rule3 = ctrl.Rule(blood_sugar["low"] & bmi["overweight"], diabetes_risk["low"])
+
+Rule4 = ctrl.Rule(blood_sugar["normal"] & bmi["underweight"], diabetes_risk["medium"])
+Rule5 = ctrl.Rule(blood_sugar["normal"] & bmi["normal"], diabetes_risk["medium"])
+Rule6 = ctrl.Rule(blood_sugar["normal"] & bmi["overweight"], diabetes_risk["medium"])
+
+Rule7 = ctrl.Rule(blood_sugar["high"] & bmi["underweight"], diabetes_risk["high"])
+Rule8 = ctrl.Rule(blood_sugar["high"] & bmi["normal"], diabetes_risk["high"])
+Rule9 = ctrl.Rule(blood_sugar["high"] & bmi["overweight"], diabetes_risk["high"])
+
+diabetes_ctrl = ctrl.ControlSystem([Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9])
+diabetes_sim = ctrl.ControlSystemSimulation(diabetes_ctrl)
+
+#inputs
+test_blood_sugar = int(input("Blood sugar in mg/dl: "))
+test_bmi = int(input("BMI: "))
+
+diabetes_sim.input['blood_sugar'] = test_blood_sugar
+diabetes_sim.input['bmi'] = test_bmi
+
+diabetes_sim.compute()
+
+print("Diabetes Risk:", diabetes_sim.output['diabetes_risk'])
+diabetes_risk.view(sim=diabetes_sim)
